@@ -1,0 +1,13 @@
+[package]
+name = "raptor"
+version = "0.1.0"
+edition = "2021"
+description = "Runtime buffer-safety checks at the Rust-to-C FFI boundary (v1 step 1: guard-byte overrun check)"
+
+[[bin]]
+name = "raptor"
+path = "src/main.rs"
+
+[lib]
+name = "raptor"
+path = "src/lib.rs"
