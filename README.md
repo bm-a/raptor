@@ -1,5 +1,12 @@
 # raptor — plain-language README
 
+**Repo:** https://github.com/bm-a/raptor · **Wiki sources:** [`wiki/`](wiki/)
+(Home, What-raptor-checks, What-raptor-does-NOT-catch, How-to-verify,
+CLI-reference, The-buggy-test-suite, Prior-art, Decisions-log, FAQ).
+The GitHub wiki tab mirrors these pages once initialized (one manual visit to
+https://github.com/bm-a/raptor/wiki → "Create the first page", then the
+staged pages in `wiki/` are pushed to `raptor.wiki.git`).
+
 **What this is, in one sentence:** a test-time checker for one dangerous pattern —
 "Rust hands a flat byte buffer (pointer + length) to a C function for one call."
 It catches C writing past the ends, freeing the buffer, saving the pointer and
