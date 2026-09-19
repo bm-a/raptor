@@ -270,5 +270,8 @@ approval (see §11).
 
 ## 14. License
 
-To be decided by the maintainer. Until a license file is added, all rights
-reserved — contact the maintainer before reusing this code beyond review.
+Licensed under either of Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+or MIT license ([LICENSE-MIT](LICENSE-MIT)) at your option — the standard
+Rust-ecosystem dual license. Unless you explicitly state otherwise, any
+contribution intentionally submitted for inclusion in this project shall be
+dual-licensed as above, without additional terms.
