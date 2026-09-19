@@ -1,0 +1,47 @@
+# raptor
+
+> Runtime buffer-safety checks at the Rust-to-C FFI boundary: catches C buffer
+> overruns, over-reads, invalid free(), and hold-and-use-late bugs for the
+> pattern "Rust passes a flat buffer (pointer + length) to C for one call".
+> Test-time only. Zero dependencies. https://github.com/bm-a/raptor
+
+## What it is
+
+- Test harness (not a language, not a verifier): instruments one FFI call with
+  guard canaries (16B each side, zero-padding asserted), post-return poisoning,
+  PROT_NONE page guards, and child-process isolation; prints plain-language
+  PASS/FAIL + failing input with reproduce command.
+- Four checks: write-before-start, write-past-end, free-of-buffer,
+  hold-and-use-late, read-past-length (read-only).
+- Explicit non-goals: nested pointers, threads, leaks, C++, production
+  protection, any second FFI pattern.
+
+## Repository map
+
+- `README.md`: full documentation (start here for narrative + commands).
+- `src/lib.rs`: check implementations; `src/main.rs`: `raptor check` CLI.
+- `c_src/buggy.c`: 1 correct + 5 deliberately-buggy C functions (the proof).
+- `tests/step1_guard.rs`, `tests/step2_free_stash.rs`, `tests/step3_overread.rs`.
+- `DESIGN.md`: locked design; `DECISIONS.md`: trade-off log.
+- `wiki/*.md`: detailed docs (mirrored to GitHub wiki).
+
+## Verified facts (do not restate as guarantees beyond these)
+
+- `cargo test` → 14 tests pass: each of 5 bug types caught 100/100 fuzzed runs
+  (sizes incl. 0,1,2,16,17,4095,4096; deterministic xorshift content from seed);
+  correct function: 0 false positives.
+- CLI: `raptor check --rust-sig '<decl>' --c-sig '<decl>' --func
+  good|overrun|underrun|free|overread|stash [--len N --seed S | --fuzz N]`.
+- Exit codes: 0 = SAFE on input (single) or harness-correct summary (fuzz);
+  1 = UNSAFE/bug caught; 2 = usage/signature-pattern error.
+- Both signatures must match flat-buffer pattern (pointer + length) or the
+  tool refuses (exit 2). Scope: Rust-and-C only, debug/test builds only.
+
+## Guidance for agents working in this repo
+
+- Preserve the verifiability contract: every check needs a deliberately-buggy
+  function proving it fires, plus fuzz runs; every FAIL must print
+  length+seed+content+reproduce command.
+- Do not add FFI patterns, languages, or "general verification" without owner
+  approval. Do not weaken tests to make failures pass.
+- Build offline-safe: no external crates (std only + cc-built C corpus).
