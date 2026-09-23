@@ -13,7 +13,14 @@ fn main() {
     let cc = env::var("CC").unwrap_or_else(|_| "cc".to_string());
 
     let status = Command::new(&cc)
-        .args(["-c", "-g", "-O0", "-Wall", "-Wextra", "-fno-omit-frame-pointer"])
+        .args([
+            "-c",
+            "-g",
+            "-O0",
+            "-Wall",
+            "-Wextra",
+            "-fno-omit-frame-pointer",
+        ])
         .arg(&src)
         .arg("-o")
         .arg(&obj)

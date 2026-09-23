@@ -19,7 +19,15 @@ fn fuzz_lens(n: usize, seed: u64) -> Vec<usize> {
 fn page_child(func: &str, len: usize, seed: u64) -> std::process::ExitStatus {
     let exe = env!("CARGO_BIN_EXE_raptor");
     std::process::Command::new(exe)
-        .args(["__page-probe", "--func", func, "--len", &len.to_string(), "--seed", &seed.to_string()])
+        .args([
+            "__page-probe",
+            "--func",
+            func,
+            "--len",
+            &len.to_string(),
+            "--seed",
+            &seed.to_string(),
+        ])
         .status()
         .expect("spawn page probe")
 }
@@ -29,7 +37,10 @@ fn contiguous_honestly_misses_pure_overread() {
     // Reads leave no trace in guard bytes: this MUST pass guards, proving why
     // Step 3 needs the page layout. If this ever fails, our story is wrong.
     let (r, _) = run_guarded(TestFunc::Overread, 16, 7);
-    assert!(r.passed(), "contiguous guards cannot see pure reads — expected PASS here");
+    assert!(
+        r.passed(),
+        "contiguous guards cannot see pure reads — expected PASS here"
+    );
     println!("confirmed gap: contiguous guards PASS on over-read (reads leave no trace)");
 }
 
@@ -46,7 +57,10 @@ fn overread_caught_by_page_guard_100_runs() {
         }
     }
     println!("overread/page: 100 runs, {} misses", missed);
-    assert_eq!(missed, 0, "read-past-length must fault on the guard page every time");
+    assert_eq!(
+        missed, 0,
+        "read-past-length must fault on the guard page every time"
+    );
 }
 
 #[test]
@@ -54,7 +68,11 @@ fn good_reads_inside_survive_page_guard() {
     // c_good only touches buf[0..len]; page layout must pass for locked sizes.
     for &len in &PAGE_SIZES {
         let st = page_child("good", len, 7);
-        assert!(st.success() && st.code() == Some(0), "good must survive page layout (len={})", len);
+        assert!(
+            st.success() && st.code() == Some(0),
+            "good must survive page layout (len={})",
+            len
+        );
     }
     println!("good survives page layout for all 7 locked sizes (no false over-read alarms)");
 }

@@ -1,6 +1,8 @@
 //! Step 2 tests: free check + hold-and-use-late (stash) check.
 //! Run with --nocapture to see the plain-language lines.
-use raptor::{interpret_free_status, run_guarded, run_stash_check, FreeVerdict, TestFunc, PAGE_SIZES};
+use raptor::{
+    interpret_free_status, run_guarded, run_stash_check, FreeVerdict, TestFunc, PAGE_SIZES,
+};
 
 fn fuzz_lens(n: usize, seed: u64) -> Vec<usize> {
     let mut lens: Vec<usize> = PAGE_SIZES.to_vec();
@@ -18,7 +20,15 @@ fn fuzz_lens(n: usize, seed: u64) -> Vec<usize> {
 fn free_child(func: &str, len: usize, seed: u64) -> FreeVerdict {
     let exe = env!("CARGO_BIN_EXE_raptor");
     let st = std::process::Command::new(exe)
-        .args(["__free-probe", "--func", func, "--len", &len.to_string(), "--seed", &seed.to_string()])
+        .args([
+            "__free-probe",
+            "--func",
+            func,
+            "--len",
+            &len.to_string(),
+            "--seed",
+            &seed.to_string(),
+        ])
         .status()
         .expect("spawn free probe");
     interpret_free_status(st)
@@ -65,7 +75,12 @@ fn stash_bug_caught_100_runs_no_misses() {
         let (r, content) = run_stash_check(TestFunc::Stash, len, seed);
         if !r.caught() {
             missed += 1;
-            println!("MISSED STASH len={} seed={} content=[{}]", len, seed, raptor::preview(&content));
+            println!(
+                "MISSED STASH len={} seed={} content=[{}]",
+                len,
+                seed,
+                raptor::preview(&content)
+            );
         } else {
             // The reuse must write exactly our marker at buf[0].
             assert_eq!(r.reuse_ret, 0xEE, "reuse must show the stash marker");
@@ -97,6 +112,9 @@ fn good_never_flags_stash_100_runs() {
 fn stash_guards_still_checked_alongside() {
     // Stashing itself must not corrupt guards (the bug is the late use, not the call).
     let (r, _) = run_guarded(TestFunc::Stash, 16, 7);
-    assert!(r.passed(), "c_stash call itself must leave guards intact; only the late reuse is the bug");
+    assert!(
+        r.passed(),
+        "c_stash call itself must leave guards intact; only the late reuse is the bug"
+    );
     println!("stash call leaves guards intact; late reuse is what fails");
 }

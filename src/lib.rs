@@ -164,9 +164,8 @@ pub fn run_guarded(func: TestFunc, len: usize, seed: u64) -> (CheckResult, Vec<u
 
     let base = alloc.as_mut_ptr();
     let buf = unsafe { base.add(GUARD_SIZE) };
-    let pad_ok = unsafe {
-        base.add(GUARD_SIZE) == buf && buf.add(len) == base.add(GUARD_SIZE + len)
-    };
+    let pad_ok =
+        unsafe { base.add(GUARD_SIZE) == buf && buf.add(len) == base.add(GUARD_SIZE + len) };
 
     unsafe {
         match func {
@@ -270,7 +269,11 @@ pub mod freeprobe {
             }
         }
         unsafe { free(base) };
-        if ok { 0 } else { 1 }
+        if ok {
+            0
+        } else {
+            1
+        }
     }
 }
 
@@ -425,14 +428,7 @@ mod page {
     const MAP_ANONYMOUS: i32 = 32;
 
     unsafe extern "C" {
-        fn mmap(
-            addr: *mut u8,
-            len: usize,
-            prot: i32,
-            flags: i32,
-            fd: i32,
-            offset: i64,
-        ) -> *mut u8;
+        fn mmap(addr: *mut u8, len: usize, prot: i32, flags: i32, fd: i32, offset: i64) -> *mut u8;
         fn mprotect(addr: *mut u8, len: usize, prot: i32) -> i32;
         fn munmap(addr: *mut u8, len: usize) -> i32;
         // getpagesize(), not sysconf: the sysconf constant differs per libc
@@ -521,7 +517,11 @@ mod page {
             }
         }
         unsafe { munmap(map, map_len) };
-        if ok { 0 } else { 1 }
+        if ok {
+            0
+        } else {
+            1
+        }
     }
 }
 

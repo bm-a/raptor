@@ -25,11 +25,19 @@ fn good_passes_100_runs_no_false_positives() {
         assert!(r.padding_ok, "padding must hold (len={})", len);
         if !r.passed() {
             fails += 1;
-            println!("UNEXPECTED FAIL len={} seed={}\n{}", len, seed, r.report(&content));
+            println!(
+                "UNEXPECTED FAIL len={} seed={}\n{}",
+                len,
+                seed,
+                r.report(&content)
+            );
         }
     }
     println!("good: 100 runs, {} false positives", fails);
-    assert_eq!(fails, 0, "correct C function must pass with zero false positives");
+    assert_eq!(
+        fails, 0,
+        "correct C function must pass with zero false positives"
+    );
 }
 
 #[test]
@@ -42,11 +50,28 @@ fn overrun_caught_100_runs_no_misses() {
         assert!(r.padding_ok, "padding must hold (len={})", len);
         if r.passed() {
             missed += 1;
-            println!("MISSED BUG len={} seed={}\n{}", len, seed, r.report(&content));
+            println!(
+                "MISSED BUG len={} seed={}\n{}",
+                len,
+                seed,
+                r.report(&content)
+            );
         } else {
-            assert!(!r.trailing_ok, "overrun must hit trailing guard (len={})", len);
-            assert!(r.leading_ok, "overrun must not touch leading guard (len={})", len);
-            assert_eq!(r.first_diff_trailing, Some(0), "1-byte overrun hits trailing byte 0");
+            assert!(
+                !r.trailing_ok,
+                "overrun must hit trailing guard (len={})",
+                len
+            );
+            assert!(
+                r.leading_ok,
+                "overrun must not touch leading guard (len={})",
+                len
+            );
+            assert_eq!(
+                r.first_diff_trailing,
+                Some(0),
+                "1-byte overrun hits trailing byte 0"
+            );
         }
     }
     println!("overrun: 100 runs, {} misses", missed);
@@ -63,10 +88,23 @@ fn underrun_caught_100_runs_no_misses() {
         assert!(r.padding_ok, "padding must hold (len={})", len);
         if r.passed() {
             missed += 1;
-            println!("MISSED BUG len={} seed={}\n{}", len, seed, r.report(&content));
+            println!(
+                "MISSED BUG len={} seed={}\n{}",
+                len,
+                seed,
+                r.report(&content)
+            );
         } else {
-            assert!(!r.leading_ok, "underrun must hit leading guard (len={})", len);
-            assert!(r.trailing_ok, "underrun must not touch trailing guard (len={})", len);
+            assert!(
+                !r.leading_ok,
+                "underrun must hit leading guard (len={})",
+                len
+            );
+            assert!(
+                r.trailing_ok,
+                "underrun must not touch trailing guard (len={})",
+                len
+            );
         }
     }
     println!("underrun: 100 runs, {} misses", missed);
@@ -77,7 +115,11 @@ fn underrun_caught_100_runs_no_misses() {
 fn page_layout_covers_exactly_the_7_locked_sizes() {
     assert_eq!(PAGE_SIZES, [0, 1, 2, 16, 17, 4095, 4096]);
     for &len in &PAGE_SIZES {
-        assert!(placement_ok(len), "page placement must hold for locked size {}", len);
+        assert!(
+            placement_ok(len),
+            "page placement must hold for locked size {}",
+            len
+        );
     }
     println!("page placement OK for exactly {:?}", PAGE_SIZES);
 }
@@ -87,29 +129,51 @@ fn page_layout_good_passes_and_overrun_faults() {
     let exe = env!("CARGO_BIN_EXE_raptor");
     for &len in &PAGE_SIZES {
         let good = std::process::Command::new(exe)
-            .args(["__page-probe", "--func", "good", "--len", &len.to_string(), "--seed", "7"])
+            .args([
+                "__page-probe",
+                "--func",
+                "good",
+                "--len",
+                &len.to_string(),
+                "--seed",
+                "7",
+            ])
             .status()
             .expect("spawn page probe");
-        assert!(good.success(), "good must survive page layout (len={})", len);
+        assert!(
+            good.success(),
+            "good must survive page layout (len={})",
+            len
+        );
 
         let bad = std::process::Command::new(exe)
-            .args(["__page-probe", "--func", "overrun", "--len", &len.to_string(), "--seed", "7"])
+            .args([
+                "__page-probe",
+                "--func",
+                "overrun",
+                "--len",
+                &len.to_string(),
+                "--seed",
+                "7",
+            ])
             .status()
             .expect("spawn page probe");
         // Caught either as guard-mismatch exit(1) or as a fault (signal => !success).
-        assert!(!bad.success(), "overrun must be caught by page guard (len={})", len);
+        assert!(
+            !bad.success(),
+            "overrun must be caught by page guard (len={})",
+            len
+        );
     }
     println!("page layout: good passes, overrun caught, for all 7 locked sizes");
 }
 
 #[test]
 fn sig_checker_accepts_flat_buffer_and_rejects_other() {
-    assert!(
-        sigs_match_flat_buffer_pattern(
-            "extern \"C\" fn f(buf: *mut u8, len: usize)",
-            "void f(uint8_t *buf, size_t len)"
-        )
-        .is_ok()
-    );
+    assert!(sigs_match_flat_buffer_pattern(
+        "extern \"C\" fn f(buf: *mut u8, len: usize)",
+        "void f(uint8_t *buf, size_t len)"
+    )
+    .is_ok());
     assert!(sigs_match_flat_buffer_pattern("fn f(x: i32)", "void f(int x)").is_err());
 }

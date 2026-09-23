@@ -1,9 +1,8 @@
 // raptor CLI: `raptor check` runs guarded checks and prints a plain-language
 // report. Hidden children (__page-probe, __free-probe) isolate faults/aborts.
 use raptor::{
-    interpret_free_status, make_content, page_probe_main, placement_ok, preview,
-    run_guarded, run_stash_check, sigs_match_flat_buffer_pattern, free_probe_main,
-    TestFunc, PAGE_SIZES,
+    free_probe_main, interpret_free_status, make_content, page_probe_main, placement_ok, preview,
+    run_guarded, run_stash_check, sigs_match_flat_buffer_pattern, TestFunc, PAGE_SIZES,
 };
 use std::env;
 use std::process::{Command, ExitCode};
@@ -23,9 +22,23 @@ fn get(args: &[String], flag: &str) -> Option<String> {
     args.windows(2).find(|w| w[0] == flag).map(|w| w[1].clone())
 }
 
-fn child_status(exe: &str, mode: &str, func: &str, len: usize, seed: u64) -> std::process::ExitStatus {
+fn child_status(
+    exe: &str,
+    mode: &str,
+    func: &str,
+    len: usize,
+    seed: u64,
+) -> std::process::ExitStatus {
     Command::new(exe)
-        .args([mode, "--func", func, "--len", &len.to_string(), "--seed", &seed.to_string()])
+        .args([
+            mode,
+            "--func",
+            func,
+            "--len",
+            &len.to_string(),
+            "--seed",
+            &seed.to_string(),
+        ])
         .status()
         .expect("spawn raptor child probe")
 }
@@ -49,7 +62,10 @@ fn main() -> ExitCode {
     if args.len() >= 2 && args[1] == "__page-probe" {
         let func = get(&args, "--func").unwrap_or_default();
         let len: usize = get(&args, "--len").unwrap_or_default().parse().unwrap_or(0);
-        let seed: u64 = get(&args, "--seed").unwrap_or_default().parse().unwrap_or(0);
+        let seed: u64 = get(&args, "--seed")
+            .unwrap_or_default()
+            .parse()
+            .unwrap_or(0);
         let f = TestFunc::from_name(&func).unwrap_or(TestFunc::Good);
         #[cfg(unix)]
         {
@@ -66,7 +82,10 @@ fn main() -> ExitCode {
     if args.len() >= 2 && args[1] == "__free-probe" {
         let func = get(&args, "--func").unwrap_or_default();
         let len: usize = get(&args, "--len").unwrap_or_default().parse().unwrap_or(0);
-        let seed: u64 = get(&args, "--seed").unwrap_or_default().parse().unwrap_or(0);
+        let seed: u64 = get(&args, "--seed")
+            .unwrap_or_default()
+            .parse()
+            .unwrap_or(0);
         let f = TestFunc::from_name(&func).unwrap_or(TestFunc::Good);
         #[cfg(unix)]
         {
@@ -89,7 +108,9 @@ fn main() -> ExitCode {
     let func_s = get(&args, "--func").unwrap_or_default();
     if let Err(e) = sigs_match_flat_buffer_pattern(&rust_sig, &c_sig) {
         eprintln!("raptor: signature problem\n  {}", e);
-        eprintln!("Only one pattern is supported: flat buffer (pointer + length), Rust-and-C only.");
+        eprintln!(
+            "Only one pattern is supported: flat buffer (pointer + length), Rust-and-C only."
+        );
         return ExitCode::from(2);
     }
     let Some(func) = TestFunc::from_name(&func_s) else {
@@ -101,8 +122,14 @@ fn main() -> ExitCode {
         let n: usize = nstr.parse().unwrap_or(100);
         return fuzz_mode(func, n);
     }
-    let len: usize = get(&args, "--len").unwrap_or_else(|| "16".into()).parse().unwrap_or(16);
-    let seed: u64 = get(&args, "--seed").unwrap_or_else(|| "7".into()).parse().unwrap_or(7);
+    let len: usize = get(&args, "--len")
+        .unwrap_or_else(|| "16".into())
+        .parse()
+        .unwrap_or(16);
+    let seed: u64 = get(&args, "--seed")
+        .unwrap_or_else(|| "7".into())
+        .parse()
+        .unwrap_or(7);
     single_mode(func, len, seed)
 }
 
@@ -117,7 +144,9 @@ fn header(func: TestFunc, len: usize, seed: u64, content: &[u8]) -> String {
 }
 
 fn single_mode(func: TestFunc, len: usize, seed: u64) -> ExitCode {
-    let exe = env::current_exe().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
+    let exe = env::current_exe()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_default();
     let mut out = String::new();
     let mut bad = false;
 
@@ -130,7 +159,11 @@ fn single_mode(func: TestFunc, len: usize, seed: u64) -> ExitCode {
                 let st = child_status(&exe, "__page-probe", func.c_name(), len, seed);
                 out.push_str(&format!(
                     "[{}] Page-guard layout (size {:?}): {}\n",
-                    if st.success() && st.code() == Some(0) { "PASS" } else { "FAIL" },
+                    if st.success() && st.code() == Some(0) {
+                        "PASS"
+                    } else {
+                        "FAIL"
+                    },
                     PAGE_SIZES,
                     if st.success() && st.code() == Some(0) {
                         "survived, leading guard intact".to_string()
@@ -150,14 +183,24 @@ fn single_mode(func: TestFunc, len: usize, seed: u64) -> ExitCode {
                 if func != TestFunc::Good {
                     bad = r.passed() && page_passed; // true only if BOTH missed
                     if bad {
-                        out.push_str("Result: MISSED BUG — neither layout caught it on this input.\n");
+                        out.push_str(
+                            "Result: MISSED BUG — neither layout caught it on this input.\n",
+                        );
                     } else {
                         out.push_str(&format!("Result: UNSAFE — caught on this input (reproduce: raptor check --func {} --len {} --seed {}).\n", func.c_name(), len, seed));
                     }
                     print!("{}", out);
-                    return if bad { ExitCode::SUCCESS } else { ExitCode::from(1) };
+                    return if bad {
+                        ExitCode::SUCCESS
+                    } else {
+                        ExitCode::from(1)
+                    };
                 }
-                out.push_str(if bad { "Result: UNSAFE on this input.\n" } else { "Result: SAFE on this input.\n" });
+                out.push_str(if bad {
+                    "Result: UNSAFE on this input.\n"
+                } else {
+                    "Result: SAFE on this input.\n"
+                });
             } else {
                 bad = !r.passed();
                 if bad {
@@ -182,12 +225,18 @@ fn single_mode(func: TestFunc, len: usize, seed: u64) -> ExitCode {
                 out.push_str("Result: MISSED BUG — freezer was NOT caught on this input.\n");
             }
             print!("{}", out);
-            return if bad { ExitCode::from(1) } else { ExitCode::SUCCESS };
+            return if bad {
+                ExitCode::from(1)
+            } else {
+                ExitCode::SUCCESS
+            };
         }
         TestFunc::Overread => {
             let (r, content) = run_guarded(func, len, seed);
             out.push_str(&header(func, len, seed, &content));
-            out.push_str("Note: plain guard bytes cannot catch pure reads (reads leave no trace).\n");
+            out.push_str(
+                "Note: plain guard bytes cannot catch pure reads (reads leave no trace).\n",
+            );
             out.push_str(&r.report(&content));
             // Over-read verdict always comes from the page layout (works for
             // any size; the locked-7 list governs overrun/underrun dual runs).
@@ -209,7 +258,11 @@ fn single_mode(func: TestFunc, len: usize, seed: u64) -> ExitCode {
                 out.push_str("Result: MISSED BUG — over-read not caught on this input.\n");
             }
             print!("{}", out);
-            return if caught { ExitCode::from(1) } else { ExitCode::SUCCESS };
+            return if caught {
+                ExitCode::from(1)
+            } else {
+                ExitCode::SUCCESS
+            };
         }
         TestFunc::Stash => {
             let (r, content) = run_stash_check(func, len, seed);
@@ -222,15 +275,25 @@ fn single_mode(func: TestFunc, len: usize, seed: u64) -> ExitCode {
                 out.push_str("Result: MISSED BUG — stash was NOT caught on this input.\n");
             }
             print!("{}", out);
-            return if bad { ExitCode::from(1) } else { ExitCode::SUCCESS };
+            return if bad {
+                ExitCode::from(1)
+            } else {
+                ExitCode::SUCCESS
+            };
         }
     }
     print!("{}", out);
-    if bad { ExitCode::from(1) } else { ExitCode::SUCCESS }
+    if bad {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    }
 }
 
 fn fuzz_mode(func: TestFunc, n: usize) -> ExitCode {
-    let exe = env::current_exe().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
+    let exe = env::current_exe()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_default();
     // Distinct xorshift streams per func so inputs vary.
     let fseed = match func {
         TestFunc::Good => 0x1234,
@@ -252,7 +315,12 @@ fn fuzz_mode(func: TestFunc, n: usize) -> ExitCode {
                 if !r.passed() {
                     false_alarms += 1;
                     if first_fail.is_none() {
-                        first_fail = Some(format!("len={} seed={} content=[{}]", len, seed, preview(&content)));
+                        first_fail = Some(format!(
+                            "len={} seed={} content=[{}]",
+                            len,
+                            seed,
+                            preview(&content)
+                        ));
                     }
                 }
                 // page + free + stash must also pass for good:
@@ -341,13 +409,35 @@ fn fuzz_mode(func: TestFunc, n: usize) -> ExitCode {
         if let Some(f) = first_fail {
             println!("first failing input: {}", f);
         }
-        println!("{}", if false_alarms == 0 { "Result: PASS — zero false positives." } else { "Result: FAIL — false positives seen." });
-        return if false_alarms == 0 { ExitCode::SUCCESS } else { ExitCode::from(1) };
+        println!(
+            "{}",
+            if false_alarms == 0 {
+                "Result: PASS — zero false positives."
+            } else {
+                "Result: FAIL — false positives seen."
+            }
+        );
+        return if false_alarms == 0 {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::from(1)
+        };
     }
     println!("misses (bug NOT caught): {}", misses);
     if let Some(f) = first_fail {
         println!("first missed input: {}", f);
     }
-    println!("{}", if misses == 0 { "Result: PASS — bug caught on every run." } else { "Result: FAIL — bug missed." });
-    if misses == 0 { ExitCode::SUCCESS } else { ExitCode::from(1) }
+    println!(
+        "{}",
+        if misses == 0 {
+            "Result: PASS — bug caught on every run."
+        } else {
+            "Result: FAIL — bug missed."
+        }
+    );
+    if misses == 0 {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::from(1)
+    }
 }
